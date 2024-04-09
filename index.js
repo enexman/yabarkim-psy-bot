@@ -1,7 +1,27 @@
 require('dotenv').config();
-const { Bot, GrammyError, HttpError, Keyboard } = require('grammy');
+const { Bot, GrammyError, HttpError, Keyboard, InputFile } = require('grammy');
+const { TEXT } = require('./text.js');
+const { ARTICLE } = require('./articles.js');
+
+// клавиатуры
+const mainKeyboard = new Keyboard()
+    .text(`Что Вас беспокоит?`)
+    .row().text(`Полезные статьи`)
+    .resized().oneTime();
+const painKeyboard = new Keyboard()
+    .text(`Чувствую сильную тревогу`)
+    // .row().text(`Не могу совладать с эмоциями`)
+    // .row().text(`У меня панические атаки`)
+    .resized().oneTime();
+const backKeyboard = new Keyboard().text(`Главное меню`).resized().oneTime();
+const articleKeyboard = new Keyboard()
+    .text(`Когда тревога уже патология?`)
+    .row().text(`Главное меню`)
+    .resized().oneTime();
+
 
 const bot = new Bot(process.env.BOT_API_KEY);
+
 
 bot.api.setMyCommands([
     {
@@ -9,38 +29,89 @@ bot.api.setMyCommands([
         description: `Запуск бота`
     },
     {
-        command: `hello`,
-        description: `Пустышка`
+        command: `author`,
+        description: `Об авторе`
     }
 ]);
 
 // действие на команду start
 bot.command('start', async (ctx) => {
-    const startKeyboard = new Keyboard().text(`Хорошо`).row().text(`ID`).resized()/*.oneTime()*/;
     await ctx.reply(
-        `<a href="https://yabarkim-psy.ru/">site</a>`,
+        TEXT.main,
         {
             parse_mode: `HTML`,
-            reply_markup: startKeyboard
+            reply_markup: mainKeyboard
         }
-
     )
 });
 
-bot.hears(`Хорошо`, async (ctx) => {
-    const goodKeyboard = new Keyboard().text(`Назад`).resized();
-    await ctx.reply(`у меня тоже`, {
-        reply_markup: goodKeyboard /*{remove_keyboard: true}*/ // убрать клавиатуру
-    })
+bot.command('author', async (ctx) => {
+    await ctx.reply(
+        TEXT.author,
+        {
+            parse_mode: `HTML`,
+            reply_markup: backKeyboard
+        }
+    )
 });
 
-bot.hears(`ID`, async (ctx) => {
-    await ctx.reply(ctx.from.id)
+bot.hears(`Главное меню`, async (ctx) => {
+    await ctx.reply(
+        TEXT.main,
+        {
+            parse_mode: `HTML`,
+            reply_markup: mainKeyboard
+        }
+    )
+});
+
+bot.hears(`Что Вас беспокоит?`, async (ctx) => {
+    await ctx.reply(
+        TEXT.pain,
+        {
+            parse_mode: `HTML`,
+            reply_markup: painKeyboard
+        }
+    )
+});
+
+bot.hears(`Полезные статьи`, async (ctx) => {
+    await ctx.reply(
+        TEXT.article,
+        {
+            parse_mode: `HTML`,
+            reply_markup: articleKeyboard
+        }
+    )
+});
+
+bot.hears(`Когда тревога уже патология?`, async (ctx) => {
+    await ctx.replyWithPhoto(new InputFile("./img/anxiety_01.jpg"),
+        {
+            caption: ARTICLE.anxiety,
+            parse_mode: `HTML`,
+            reply_markup: backKeyboard
+        }
+    );
+});
+
+bot.hears(`Чувствую сильную тревогу`, async (ctx) => {
+    await ctx.replyWithPhoto(new InputFile("./img/anxiety_01.jpg"),
+        {
+            caption: TEXT.anxiety,
+            parse_mode: `HTML`,
+            reply_markup: backKeyboard
+        }
+    );
+});
+
+bot.hears([`ID`, `id`], async (ctx) => {
+    await ctx.reply(`Ваш id: ${ctx.from.id}`)
 });
 
 // прочие сообщения
 bot.on('message', async (ctx) => {
-    await ctx.reply(`Don't know`)
+    await ctx.reply(`Извините, я вас не понимаю.`)
 });
 
 // ошибки
@@ -57,8 +128,6 @@ bot.catch((err) => {
         console.error(`Unknown error`, e);
     }
 });
-
-
 
 // старт бота
 bot.start();
